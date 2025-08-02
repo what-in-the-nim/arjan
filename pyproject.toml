@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arjan"
+version = "0.1.0"
+description = "Ask any question on your codebase with LLM"
+authors = [
+  { name = "Chatcharin Sangbutsarakum", email = "chatcharinsang@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["faiss-cpu", "httpx", "langchain", "tqdm"]
