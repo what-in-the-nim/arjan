@@ -1,6 +1,5 @@
 import asyncio
 from functools import cached_property
-from os import system
 from typing import Optional
 
 import httpx
