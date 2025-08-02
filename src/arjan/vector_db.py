@@ -1,14 +1,11 @@
-import os
-import shutil
 from pathlib import Path
 from typing import Iterable, Optional
 
 import faiss
 import numpy as np
-import requests
 from langchain.text_splitter import (
+    MarkdownTextSplitter,
     PythonCodeTextSplitter,
-    RecursiveCharacterTextSplitter,
 )
 from langchain_text_splitters import MarkdownTextSplitter
 from tqdm import tqdm
@@ -21,11 +18,12 @@ class VectorDB:
 
     IGNORE_DIRS = {".venv", "scripts"}
 
-    def __init__(self, llm: LLM, verbose: bool = True) -> None:
+    def __init__(self, embedder: LLM, reranker: LLM, verbose: bool = True) -> None:
         """Initialize the VectorDB with an LLM instance."""
         self.verbose = verbose
-        self._llm = llm
-        self._indexer = faiss.IndexFlatIP(llm.embedding_size)
+        self._embedder = embedder
+        self._reranker = reranker
+        self._indexer = faiss.IndexFlatIP(embedder.embedding_size)
         self._database = []
         self._code_splitter = PythonCodeTextSplitter()
         self._text_splitter = MarkdownTextSplitter()
@@ -76,16 +74,16 @@ class VectorDB:
             return []
 
         # Embed the query
-        query_embeddings = self._llm.embed(query)
+        query_embeddings = self._embedder.embed(query)
 
         # Search the index
-        D, I = self._indexer.search(np.array(query_embeddings).astype("float32"), k)
+        _, I = self._indexer.search(np.array(query_embeddings).astype("float32"), k)
 
         # Retrieve the top k results
         contents = [self._database[i] for i in I[0] if i >= 0]
 
         # Rerank the results based on the query
-        reranked_indices, scores = self._llm.rerank(query, contents)
+        _, scores = self._reranker.rerank(query, contents)
         # Filter non-relevant results based on the relevance threshold
         return [
             content
@@ -99,7 +97,7 @@ class VectorDB:
             print("No contents to add to the database.")
             return
 
-        embeddings = self._llm.embed(contents)
+        embeddings = self._embedder.embed(contents)
         print(np.array(embeddings).shape)
         self._indexer.add(np.array(embeddings).astype("float32"))
         self._database.extend(contents)
