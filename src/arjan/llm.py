@@ -1,5 +1,7 @@
 import asyncio
 from functools import cached_property
+from os import system
+from typing import Optional
 
 import httpx
 
@@ -7,16 +9,12 @@ import httpx
 class LLM:
     def __init__(
         self,
-        embedding_model: str = "Qwen/Qwen3-Embedding-0.6B",
-        reranker_model: str = "Qwen/Qwen3-Reranker-0.6B",
-        embedding_endpoint: str = "http://localhost:8080/v1",
-        reranker_endpoint: str = "http://localhost:8081/v1",
+        model: str = "Qwen/Qwen3-0.6B",
+        endpoint: str = "http://localhost:8000/v1",
     ) -> None:
         """Initialize the LLM with endpoints for embedding and reranking."""
-        self.embedding_model = embedding_model
-        self.reranker_model = reranker_model
-        self.embedding_endpoint = embedding_endpoint.rstrip("/")
-        self.reranker_endpoint = reranker_endpoint.rstrip("/")
+        self.model = model
+        self.endpoint = endpoint.rstrip("/")
 
     @cached_property
     def embedding_size(self) -> int:
@@ -24,11 +22,33 @@ class LLM:
         embedding = self.embed("dummy")
         return len(embedding[0])
 
+    async def async_chat_completion(
+        self, user_prompt: str, system_prompt: Optional[str] = None
+    ) -> str:
+        """Get a chat completion response asynchronously."""
+        url = f"{self.endpoint}/v1/chat/completions"
+        system_prompt = system_prompt or "You are a helpful assistant."
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url,
+                json=payload,
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+
     async def async_embed(self, text: str | list[str]) -> list[list[float]]:
         """Embed a single text or a list of texts asynchronously."""
-        url = f"{self.embedding_endpoint}/v1/embeddings"
+        url = f"{self.endpoint}/v1/embeddings"
         payload = {
-            "model": self.embedding_model,
+            "model": self.model,
             "input": [text] if isinstance(text, str) else text,
         }
         async with httpx.AsyncClient() as client:
@@ -45,9 +65,9 @@ class LLM:
         self, query: str, documents: list[str]
     ) -> tuple[list[int], list[float]]:
         """Rerank a list of documents based on the query asynchronously."""
-        url = f"{self.reranker_endpoint}/v1/rerank"
+        url = f"{self.endpoint}/v1/rerank"
         payload = {
-            "model": self.reranker_model,
+            "model": self.model,
             "query": query,
             "documents": documents,
         }
@@ -72,6 +92,12 @@ class LLM:
             scores = [scores[i] for i in sorted_indices]
             # Return sorted indices and their corresponding scores
             return indices, scores
+
+    def chat_completion(
+        self, user_prompt: str, system_prompt: Optional[str] = None
+    ) -> str:
+        """Get a chat completion response."""
+        return asyncio.run(self.async_chat_completion(user_prompt, system_prompt))
 
     def embed(self, text: str | list[str]) -> list[list[float]]:
         """Embed a single text or a list of texts."""
