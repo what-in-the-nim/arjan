@@ -30,6 +30,11 @@ class VectorDB:
         self._code_splitter = PythonCodeTextSplitter()
         self._text_splitter = MarkdownTextSplitter()
 
+    @property
+    def total_chunks(self) -> int:
+        """Get the total number of chunks in the vector database."""
+        return len(self._database)
+
     def build(
         self,
         source_dir: str,
