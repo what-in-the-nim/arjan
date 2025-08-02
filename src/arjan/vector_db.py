@@ -50,7 +50,7 @@ class VectorDB:
             if not any(ignored in f.parts for ignored in self.IGNORE_DIRS)
         ]
 
-        if not files:
+        if not files and self.verbose:
             print(
                 f"No files found in {source_dir} with extensions {white_exts} excluding {black_exts}."
             )
@@ -59,7 +59,7 @@ class VectorDB:
         # Chunk the codes and texts into manageable pieces
         chunks = self._chunk(files)
 
-        if not chunks:
+        if not chunks and self.verbose:
             print(f"No chunks created from files in {source_dir}.")
             return
 
@@ -95,7 +95,7 @@ class VectorDB:
 
     def update_database(self, contents: list[str]) -> None:
         """Update the vector database with new contents."""
-        if not contents:
+        if not contents and self.verbose:
             print("No contents to add to the database.")
             return
 
