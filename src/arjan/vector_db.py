@@ -9,12 +9,12 @@ from langchain.text_splitter import (
     PythonCodeTextSplitter,
 )
 from langchain_text_splitters import MarkdownTextSplitter
+from loguru import logger
 from tqdm import tqdm
 
+from arjan.constants import VECTOR_DB_DIR
 from arjan.llm import LLM
 from arjan.utils import list_files
-from arjan.constants import VECTOR_DB_DIR
-from loguru import logger
 
 
 class VectorDB:
@@ -39,15 +39,14 @@ class VectorDB:
         return len(self._database)
 
     @classmethod
-    def load(cls, save_dir: str | Path) -> "VectorDB":
+    def load(cls, pickle_file: str | Path) -> "VectorDB":
         """Load the VectorDB instance from a saved directory."""
-        if isinstance(save_dir, str):
-            save_dir = Path(save_dir)
-        save_file = save_dir / "vector_db.pkl"
-        if not save_file.exists():
-            raise FileNotFoundError(f"Save file {save_file} does not exist.")
+        if isinstance(pickle_file, str):
+            pickle_file = Path(pickle_file)
+        if not pickle_file.exists():
+            raise FileNotFoundError(f"Save file {pickle_file} does not exist.")
         # Load the pickled instance
-        with open(save_file, "rb") as f:
+        with open(pickle_file, "rb") as f:
             return pickle.load(f)
 
     def build(
@@ -141,7 +140,9 @@ class VectorDB:
             logger.warning("No contents to add to the database.")
             return
 
-        logger.info(f"Embedding contents using '{self._embedder.model}' at '{self._embedder.endpoint}'")
+        logger.info(
+            f"Embedding contents using '{self._embedder.model}' at '{self._embedder.endpoint}'"
+        )
         embeddings = self._embedder.embed(contents)
         logger.info("Adding embeddings to the indexer...")
         self._indexer.add(np.array(embeddings).astype("float32"))

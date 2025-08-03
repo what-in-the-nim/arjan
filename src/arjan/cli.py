@@ -1,11 +1,10 @@
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import subprocess
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path
 
-from .constants import VECTOR_DB_DIR
-
-from .llm import LLM
-from .vector_db import VectorDB
+from arjan.constants import VECTOR_DB_DIR
+from arjan.llm import LLM
+from arjan.vector_db import VectorDB
 
 
 def main():
@@ -122,20 +121,20 @@ def main():
         vector_db.save()
 
     elif args.command == "run":
-        project_dir = Path(__file__).parents[2]
-        # Run streamlit app
+        import os
+
+        os.environ["PYTHONPATH"] = str(Path(__file__).parents[1])
+        file_dir = Path(__file__).parent
+        print(str(file_dir / "app.py"))
         subprocess.run(
             [
+                "python",
+                "-m",
                 "streamlit",
                 "run",
-                project_dir / "src/arjan/app.py",
-                "--",
-                "--vector_db_dir",
-                args.vector_db_dir,
-                "--model",
-                args.model,
-                "--endpoint",
-                args.endpoint,
+                str(file_dir / "scripts/app.py"),
+                "--server.fileWatcherType",
+                "none",
             ]
         )
 
