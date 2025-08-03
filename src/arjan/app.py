@@ -1,18 +1,30 @@
-from pathlib import Path
 from argparse import ArgumentParser
+from pathlib import Path
+
 import streamlit as st
 
-from arjan import Arjan, LLM, VectorDB
+from arjan import LLM, Arjan, VectorDB
+
 
 # --------------------------
 # 🏁 Argument parser
 # --------------------------
 def parse_args():
     parser = ArgumentParser(description="Arjan Codebase Chatbot")
-    parser.add_argument("--vector_db_dir", type=str, default=".", help="Directory containing the vector database")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen3-4B-AWQ", help="Model name")
-    parser.add_argument("--endpoint", type=str, default="http://localhost:8000", help="Model endpoint")
+    parser.add_argument(
+        "--vector_db_dir",
+        type=str,
+        default=".",
+        help="Directory containing the vector database",
+    )
+    parser.add_argument(
+        "--model", type=str, default="Qwen/Qwen3-4B-AWQ", help="Model name"
+    )
+    parser.add_argument(
+        "--endpoint", type=str, default="http://localhost:8000", help="Model endpoint"
+    )
     return parser.parse_args()
+
 
 # Streamlit doesn't support sys.argv directly, so use session state to store args
 if "cli_args" not in st.session_state:
@@ -30,7 +42,9 @@ st.title("💬 Arjan: Ask Your Codebase")
 # ⚙️ Sidebar configuration
 # --------------------------
 st.sidebar.header("⚙️ Configuration")
-vector_db_dir = st.sidebar.text_input("📂 Vector DB Directory", value=args.vector_db_dir)
+vector_db_dir = st.sidebar.text_input(
+    "📂 Vector DB Directory", value=args.vector_db_dir
+)
 model = st.sidebar.text_input("🔧 Model Name", value=args.model)
 endpoint = st.sidebar.text_input("🌐 Model Endpoint", value=args.endpoint)
 
@@ -41,6 +55,7 @@ st.sidebar.markdown("### 📊 Model Info")
 st.sidebar.write("Model:", model)
 st.sidebar.write("Endpoint:", endpoint)
 
+
 # --------------------------
 # 🧠 Load Arjan once
 # --------------------------
@@ -48,6 +63,7 @@ st.sidebar.write("Endpoint:", endpoint)
 def load_arjan(vector_db_dir: str, model: str, endpoint: str) -> Arjan:
     vector_db = VectorDB.load(vector_db_dir)
     return Arjan(vector_db=vector_db, chat=LLM(model=model, endpoint=endpoint))
+
 
 arjan = load_arjan(vector_db_dir=vector_db_dir, model=model, endpoint=endpoint)
 
@@ -59,7 +75,9 @@ if "messages" not in st.session_state:
 
 # Display chat history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="🤖" if msg["role"] == "assistant" else "🧑‍💻"):
+    with st.chat_message(
+        msg["role"], avatar="🤖" if msg["role"] == "assistant" else "🧑‍💻"
+    ):
         st.markdown(msg["content"], unsafe_allow_html=True)
 
 # --------------------------
@@ -80,13 +98,17 @@ if user_input:
                 # If Arjan returns just a string
                 if isinstance(response, str):
                     st.markdown(response)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": response}
+                    )
 
                 # If Arjan returns structured answer + context
                 elif isinstance(response, dict):
                     answer = response.get("answer", "")
                     st.markdown(answer)
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": answer}
+                    )
 
                     # Show context chunks
                     chunks = response.get("chunks", [])
@@ -103,5 +125,9 @@ if user_input:
 # 📥 Export chat log
 # --------------------------
 if st.sidebar.button("📥 Export Chat Log"):
-    full_log = "\n\n".join(f"**{m['role']}**: {m['content']}" for m in st.session_state.messages)
-    st.download_button("Download Markdown", full_log, file_name="arjan_chat.md", mime="text/markdown")
+    full_log = "\n\n".join(
+        f"**{m['role']}**: {m['content']}" for m in st.session_state.messages
+    )
+    st.download_button(
+        "Download Markdown", full_log, file_name="arjan_chat.md", mime="text/markdown"
+    )
