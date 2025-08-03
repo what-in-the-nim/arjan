@@ -141,7 +141,9 @@ class VectorDB:
             logger.warning("No contents to add to the database.")
             return
 
+        logger.info(f"Embedding contents using '{self._embedder.model}' at '{self._embedder.endpoint}'")
         embeddings = self._embedder.embed(contents)
+        logger.info("Adding embeddings to the indexer...")
         self._indexer.add(np.array(embeddings).astype("float32"))
         self._database.extend(contents)
 
