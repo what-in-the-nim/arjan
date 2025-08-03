@@ -59,7 +59,7 @@ class VectorDB:
         """Build the vector database from the given code path."""
         if isinstance(source_dir, str):
             source_dir = Path(source_dir)
-        self.repo_name = source_dir.name
+        self.repo_name = source_dir.resolve().name
         logger.info(
             f"Building vector database from {source_dir.resolve()} with name {self.repo_name}"
         )
