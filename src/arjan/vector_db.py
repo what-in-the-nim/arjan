@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from arjan.llm import LLM
 from arjan.utils import list_files
+from arjan.constants import VECTOR_DB_DIR
 from loguru import logger
 
 
@@ -22,7 +23,9 @@ class VectorDB:
 
     def __init__(self, embedder: LLM, reranker: LLM, verbose: bool = True) -> None:
         """Initialize the VectorDB with an LLM instance."""
+        self.repo_name: str = None
         self.verbose = verbose
+
         self._embedder = embedder
         self._reranker = reranker
         self._indexer = faiss.IndexFlatIP(embedder.embedding_size)
@@ -56,7 +59,10 @@ class VectorDB:
         """Build the vector database from the given code path."""
         if isinstance(source_dir, str):
             source_dir = Path(source_dir)
-        logger.info(f"Building vector database from {source_dir.resolve()}")
+        self.repo_name = source_dir.name
+        logger.info(
+            f"Building vector database from {source_dir.resolve()} with name {self.repo_name}"
+        )
         files = list_files(source_dir, white_exts, black_exts)
         total_files = len(files)
         # If files in IGNORE_DIRS, skip them
@@ -65,7 +71,9 @@ class VectorDB:
             for f in files
             if not any(ignored in f.parts for ignored in self.IGNORE_DIRS)
         ]
-        logger.info(f"Skipped files in ignored directories for {total_files - len(files)} files.")
+        logger.info(
+            f"Skipped files in ignored directories for {total_files - len(files)} files."
+        )
 
         if not files and self.verbose:
             logger.warning(
@@ -84,14 +92,18 @@ class VectorDB:
         contents = [chunk["content"] for chunk in chunks]
         self.update_database(contents)
 
-    def save(self, save_dir: str | Path) -> None:
+    def save(
+        self, save_dir: str | Path = VECTOR_DB_DIR, name: Optional[str] = None
+    ) -> None:
         """Save the vector database to the specified directory."""
         if isinstance(save_dir, str):
             save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
 
+        save_name = name or self.repo_name
+
         # Save pickle
-        with open(save_dir / "vector_db.pkl", "wb") as f:
+        with open(save_dir / f"{save_name}.pkl", "wb") as f:
             pickle.dump(self, f)
 
         logger.info(f"Vector database saved to '{save_dir.resolve()}'.")
