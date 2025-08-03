@@ -2,6 +2,8 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import subprocess
 from pathlib import Path
 
+from .constants import VECTOR_DB_DIR
+
 from .llm import LLM
 from .vector_db import VectorDB
 
@@ -44,7 +46,7 @@ def main():
     learn_parser.add_argument(
         "--save-dir",
         type=str,
-        default=".",
+        default=str(VECTOR_DB_DIR),
         help="Directory to save the vector database",
     )
     learn_parser.add_argument(
@@ -83,8 +85,9 @@ def main():
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
     run_parser.add_argument(
-        "vector_db_dir",
+        "--vector_db_dir",
         type=str,
+        default=str(VECTOR_DB_DIR),
         help="Directory containing the vector database",
     )
     run_parser.add_argument(
@@ -116,7 +119,7 @@ def main():
             white_exts=args.white_exts,
             black_exts=args.black_exts,
         )
-        vector_db.save(save_dir=args.save_dir)
+        vector_db.save()
 
     elif args.command == "run":
         project_dir = Path(__file__).parents[2]
@@ -125,7 +128,7 @@ def main():
             [
                 "streamlit",
                 "run",
-                project_dir / "app.py",
+                project_dir / "src/arjan/app.py",
                 "--",
                 "--vector_db_dir",
                 args.vector_db_dir,
