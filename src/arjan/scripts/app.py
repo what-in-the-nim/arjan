@@ -1,40 +1,11 @@
-from argparse import ArgumentParser
 from pathlib import Path
 
 import streamlit as st
 
+from arjan.constants import VECTOR_DB_DIR
 from arjan import LLM, Arjan, VectorDB
+from arjan.utils import list_files
 
-
-# --------------------------
-# 🏁 Argument parser
-# --------------------------
-def parse_args():
-    parser = ArgumentParser(description="Arjan Codebase Chatbot")
-    parser.add_argument(
-        "--vector_db_dir",
-        type=str,
-        default=".",
-        help="Directory containing the vector database",
-    )
-    parser.add_argument(
-        "--model", type=str, default="Qwen/Qwen3-4B-AWQ", help="Model name"
-    )
-    parser.add_argument(
-        "--endpoint", type=str, default="http://localhost:8000", help="Model endpoint"
-    )
-    return parser.parse_args()
-
-
-# Streamlit doesn't support sys.argv directly, so use session state to store args
-if "cli_args" not in st.session_state:
-    st.session_state.cli_args = parse_args()
-
-args = st.session_state.cli_args
-
-# --------------------------
-# 💄 Page setup + basic CSS
-# --------------------------
 st.set_page_config(page_title="Arjan Codebase Chatbot", layout="wide")
 st.title("💬 Arjan: Ask Your Codebase")
 
@@ -43,16 +14,18 @@ st.title("💬 Arjan: Ask Your Codebase")
 # --------------------------
 st.sidebar.header("⚙️ Configuration")
 vector_db_dir = st.sidebar.text_input(
-    "📂 Vector DB Directory", value=args.vector_db_dir
+    "📂 Vector DB Directory", value=str(VECTOR_DB_DIR)
 )
-model = st.sidebar.text_input("🔧 Model Name", value=args.model)
-endpoint = st.sidebar.text_input("🌐 Model Endpoint", value=args.endpoint)
+model = st.sidebar.text_input("🔧 Model Name", value="Qwen/Qwen3-4B-AWQ")
+endpoint = st.sidebar.text_input("🌐 Model Endpoint", value="http://localhost:8000")
 
-st.sidebar.markdown("### 🗂️ Loaded Codebase")
-st.sidebar.code(str(Path.cwd()), language="bash")
+st.sidebar.markdown("### Select Codebase")
+codebase_files = list_files(vector_db_dir, white_exts=[".pkl"])
+codebases = [f.stem for f in codebase_files]
+codebase = st.sidebar.selectbox("Choose a codebase", options=codebases)
 
 st.sidebar.markdown("### 📊 Model Info")
-st.sidebar.write("Model:", model)
+st.sidebar.write("LLM:", model)
 st.sidebar.write("Endpoint:", endpoint)
 
 
@@ -60,12 +33,16 @@ st.sidebar.write("Endpoint:", endpoint)
 # 🧠 Load Arjan once
 # --------------------------
 @st.cache_resource
-def load_arjan(vector_db_dir: str, model: str, endpoint: str) -> Arjan:
-    vector_db = VectorDB.load(vector_db_dir)
-    return Arjan(vector_db=vector_db, chat=LLM(model=model, endpoint=endpoint))
+def load_arjan(vector_db_pickle: str, model: str, endpoint: str) -> Arjan:
+    return Arjan(
+        vector_db=VectorDB.load(vector_db_pickle),
+        chat=LLM(model=model, endpoint=endpoint),
+    )
 
 
-arjan = load_arjan(vector_db_dir=vector_db_dir, model=model, endpoint=endpoint)
+vector_db_pickle = Path(vector_db_dir) / f"{codebase}.pkl"
+vector_db_pickle = str(vector_db_pickle.resolve())
+arjan = load_arjan(vector_db_pickle=vector_db_pickle, model=model, endpoint=endpoint)
 
 # --------------------------
 # 💬 Chat session state
