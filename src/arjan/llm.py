@@ -3,17 +3,19 @@ from functools import cached_property
 from typing import Optional
 
 import httpx
+from loguru import logger
 
 
 class LLM:
     def __init__(
         self,
         model: str = "Qwen/Qwen3-0.6B",
-        endpoint: str = "http://localhost:8000/v1",
+        endpoint: str = "http://localhost:8000",
     ) -> None:
         """Initialize the LLM with endpoints for embedding and reranking."""
         self.model = model
         self.endpoint = endpoint.rstrip("/")
+        logger.info(f"LLM initialized with model {self.model} at {self.endpoint}")
 
     @cached_property
     def embedding_size(self) -> int:
@@ -22,7 +24,10 @@ class LLM:
         return len(embedding[0])
 
     async def async_chat_completion(
-        self, user_prompt: str, system_prompt: Optional[str] = None
+        self,
+        user_prompt: str,
+        system_prompt: Optional[str] = None,
+        timeout: float = 60.0,
     ) -> str:
         """Get a chat completion response asynchronously."""
         url = f"{self.endpoint}/v1/chat/completions"
@@ -35,15 +40,13 @@ class LLM:
             ],
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                json=payload,
-                timeout=30,
-            )
+            response = await client.post(url, json=payload, timeout=timeout)
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
 
-    async def async_embed(self, text: str | list[str]) -> list[list[float]]:
+    async def async_embed(
+        self, text: str | list[str], timeout: float = 60.0
+    ) -> list[list[float]]:
         """Embed a single text or a list of texts asynchronously."""
         url = f"{self.endpoint}/v1/embeddings"
         payload = {
@@ -51,17 +54,13 @@ class LLM:
             "input": [text] if isinstance(text, str) else text,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                json=payload,
-                timeout=30,
-            )
+            response = await client.post(url, json=payload, timeout=timeout)
             response.raise_for_status()
             embeddings = [d["embedding"] for d in response.json()["data"]]
             return embeddings
 
     async def async_rerank(
-        self, query: str, documents: list[str]
+        self, query: str, documents: list[str], timeout: float = 60.0
     ) -> tuple[list[int], list[float]]:
         """Rerank a list of documents based on the query asynchronously."""
         url = f"{self.endpoint}/v1/rerank"
@@ -71,11 +70,7 @@ class LLM:
             "documents": documents,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                json=payload,
-                timeout=30,
-            )
+            response = await client.post(url, json=payload, timeout=timeout)
             response.raise_for_status()
             # Assuming the API returns a list of ranked indices in response.json()["results"]
             results = response.json().get("results")
