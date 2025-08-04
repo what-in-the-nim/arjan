@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arjan"
-version = "0.0.1"
+version = "0.0.2"
 description = "Ask any question on your codebase with LLM"
 authors = [
   { name = "Chatcharin Sangbutsarakum", email = "chatcharinsang@gmail.com" },
