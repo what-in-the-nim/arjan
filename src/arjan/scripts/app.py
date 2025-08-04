@@ -108,3 +108,7 @@ if st.sidebar.button("📥 Export Chat Log"):
     st.download_button(
         "Download Markdown", full_log, file_name="arjan_chat.md", mime="text/markdown"
     )
+
+if st.sidebar.button("Clear Chat"):
+    st.session_state.messages = []
+    st.rerun()

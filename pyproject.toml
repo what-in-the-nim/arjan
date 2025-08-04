@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arjan"
-version = "0.1.0"
+version = "0.0.1"
 description = "Ask any question on your codebase with LLM"
 authors = [
   { name = "Chatcharin Sangbutsarakum", email = "chatcharinsang@gmail.com" },
@@ -16,3 +16,7 @@ dependencies = ["faiss-cpu", "httpx", "langchain", "streamlit", "tqdm"]
 
 [project.scripts]
 arjan = "arjan.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/what-in-the-nim/arjan"
+Issues = "https://github.com/what-in-the-nim/arjan/issues"
