@@ -5,6 +5,16 @@ import streamlit as st
 from arjan.constants import VECTOR_DB_DIR
 from arjan import LLM, Arjan, VectorDB
 from arjan.utils import list_files
+import httpx
+
+def endpoint_status(endpoint: str) -> str:
+    """Check if the endpoint is reachable."""
+    try:
+        response = httpx.get(f"{endpoint}/health")
+        return "✅ Online" if response.status_code == 200 else "❌ Offline"
+    except httpx.RequestError as e:
+        st.toast(f"Error connecting to {endpoint}: {e}")
+        return "❌ Connection Error"
 
 st.set_page_config(page_title="Arjan Codebase Chatbot", layout="wide")
 st.title("💬 Arjan: Ask Your Codebase")
