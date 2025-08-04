@@ -25,8 +25,9 @@ codebases = [f.stem for f in codebase_files]
 codebase = st.sidebar.selectbox("Choose a codebase", options=codebases)
 
 st.sidebar.markdown("### 📊 Model Info")
-st.sidebar.write("LLM:", model)
-st.sidebar.write("Endpoint:", endpoint)
+st.sidebar.markdown("**🤖 Chat Model**")
+st.sidebar.markdown(f"- **Model**: `{model}`")
+st.sidebar.markdown(f"- **Endpoint**: `{endpoint}` {endpoint_status(endpoint)}")
 
 
 # --------------------------
@@ -43,6 +44,17 @@ def load_arjan(vector_db_pickle: str, model: str, endpoint: str) -> Arjan:
 vector_db_pickle = Path(vector_db_dir) / f"{codebase}.pkl"
 vector_db_pickle = str(vector_db_pickle.resolve())
 arjan = load_arjan(vector_db_pickle=vector_db_pickle, model=model, endpoint=endpoint)
+
+# Add additional information to sidebar
+st.sidebar.markdown("---")
+st.sidebar.markdown("**🧠 Embedding Model**")
+st.sidebar.markdown(f"- **Model**: `{arjan.vector_db._embedder.model}`")
+st.sidebar.markdown(f"- **Endpoint**: `{arjan.vector_db._embedder.endpoint}` {endpoint_status(arjan.vector_db._embedder.endpoint)}")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**📌 Reranker Model**")
+st.sidebar.markdown(f"- **Model**: `{arjan.vector_db._reranker.model}`")
+st.sidebar.markdown(f"- **Endpoint**: `{arjan.vector_db._reranker.endpoint}` {endpoint_status(arjan.vector_db._reranker.endpoint)}")
 
 # --------------------------
 # 💬 Chat session state
