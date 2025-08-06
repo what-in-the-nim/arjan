@@ -23,7 +23,7 @@ class VectorDB:
 
     def __init__(self, embedder: LLM, reranker: LLM, verbose: bool = True) -> None:
         """Initialize the VectorDB with an LLM instance."""
-        self.repo_name: str = None
+        self.repo_name: str = ""
         self.verbose = verbose
 
         self._embedder = embedder
@@ -98,6 +98,10 @@ class VectorDB:
         if isinstance(save_dir, str):
             save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
+
+        if self.repo_name == "":
+            logger.error("Repository name is not set. Please build the database first.")
+            return
 
         save_name = name or self.repo_name
 
