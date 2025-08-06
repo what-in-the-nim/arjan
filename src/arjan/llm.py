@@ -11,10 +11,12 @@ class LLM:
         self,
         model: str = "Qwen/Qwen3-0.6B",
         endpoint: str = "http://localhost:8000",
+        timeout: int = 600
     ) -> None:
         """Initialize the LLM with endpoints for embedding and reranking."""
         self.model = model
         self.endpoint = endpoint.rstrip("/")
+        self.timeout = timeout
         logger.info(f"LLM initialized with model {self.model} at {self.endpoint}")
 
     @cached_property
@@ -27,7 +29,7 @@ class LLM:
         self,
         user_prompt: str,
         system_prompt: Optional[str] = None,
-        timeout: float = 60.0,
+        timeout: Optional[int] = None
     ) -> str:
         """Get a chat completion response asynchronously."""
         url = f"{self.endpoint}/v1/chat/completions"
@@ -40,12 +42,12 @@ class LLM:
             ],
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=timeout)
+            response = await client.post(url, json=payload, timeout=timeout or self.timeout)
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
 
     async def async_embed(
-        self, text: str | list[str], timeout: float = 60.0
+        self, text: str | list[str], timeout: Optional[int] = None
     ) -> list[list[float]]:
         """Embed a single text or a list of texts asynchronously."""
         url = f"{self.endpoint}/v1/embeddings"
@@ -54,13 +56,13 @@ class LLM:
             "input": [text] if isinstance(text, str) else text,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=timeout)
+            response = await client.post(url, json=payload, timeout=timeout or self.timeout)
             response.raise_for_status()
             embeddings = [d["embedding"] for d in response.json()["data"]]
             return embeddings
 
     async def async_rerank(
-        self, query: str, documents: list[str], timeout: float = 60.0
+        self, query: str, documents: list[str], timeout: Optional[int] = None
     ) -> tuple[list[int], list[float]]:
         """Rerank a list of documents based on the query asynchronously."""
         url = f"{self.endpoint}/v1/rerank"
@@ -70,7 +72,7 @@ class LLM:
             "documents": documents,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=timeout)
+            response = await client.post(url, json=payload, timeout=timeout or self.timeout)
             response.raise_for_status()
             # Assuming the API returns a list of ranked indices in response.json()["results"]
             results = response.json().get("results")
