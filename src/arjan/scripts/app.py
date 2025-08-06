@@ -33,6 +33,14 @@ st.sidebar.markdown("### Select Codebase")
 codebase_files = list_files(vector_db_dir, white_exts=[".pkl"])
 codebases = [f.stem for f in codebase_files]
 codebase = st.sidebar.selectbox("Choose a codebase", options=codebases)
+relevance_threshold = st.sidebar.slider(
+    "Relevance Threshold",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.8,
+    step=0.05,
+    help="Adjust the relevance threshold for context retrieval.",
+)
 
 st.sidebar.markdown("### 📊 Model Info")
 st.sidebar.markdown("**🤖 Chat Model**")
@@ -92,7 +100,7 @@ if user_input:
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Arjan is thinking..."):
             try:
-                response = arjan.ask(user_input)
+                response = arjan.ask(user_input, relevance_threshold=relevance_threshold)
 
                 # If Arjan returns just a string
                 if isinstance(response, str):
