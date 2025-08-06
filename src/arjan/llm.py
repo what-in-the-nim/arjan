@@ -4,6 +4,7 @@ from typing import Optional
 
 import httpx
 from loguru import logger
+from tqdm import tqdm
 
 
 class LLM:
@@ -49,17 +50,17 @@ class LLM:
     async def async_embed(
         self, text: str | list[str], timeout: Optional[int] = None
     ) -> list[list[float]]:
-        """Embed a single text or a list of texts asynchronously."""
-        url = f"{self.endpoint}/v1/embeddings"
-        payload = {
-            "model": self.model,
-            "input": [text] if isinstance(text, str) else text,
-        }
+        """Embed a single text or a list of texts asynchronously, showing progress."""
+        texts = [text] if isinstance(text, str) else text
+        embeddings: list[list[float]] = []
+
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=timeout or self.timeout)
-            response.raise_for_status()
-            embeddings = [d["embedding"] for d in response.json()["data"]]
-            return embeddings
+            coroutines = [self._embed_single(client, t, timeout) for t in texts]
+            for future in tqdm(asyncio.as_completed(coroutines), total=len(coroutines), desc="Embedding"):
+                embedding = await future
+                embeddings.append(embedding)
+
+        return embeddings
 
     async def async_rerank(
         self, query: str, documents: list[str], timeout: Optional[int] = None
@@ -102,3 +103,13 @@ class LLM:
     def rerank(self, query: str, documents: list[str]) -> tuple[list[int], list[float]]:
         """Rerank a list of documents based on the query."""
         return asyncio.run(self.async_rerank(query, documents))
+
+    async def _embed_single(self, client: httpx.AsyncClient, text: str, timeout: Optional[int] = None) -> list[float]:
+        url = f"{self.endpoint}/v1/embeddings"
+        payload = {
+            "model": self.model,
+            "input": [text],
+        }
+        response = await client.post(url, json=payload, timeout=timeout or self.timeout)
+        response.raise_for_status()
+        return response.json()["data"][0]["embedding"]
